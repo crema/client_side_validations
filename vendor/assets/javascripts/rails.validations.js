@@ -44,8 +44,12 @@
   };
 
   validatorsFor = function(name, validators) {
-    name = name.replace(/_attributes\]\[\w+\]\[(\w+)\]/g, "_attributes][][$1]");
-    return validators[name] || {};
+    if (validators[name]) {
+      return validators[name];
+    } else {
+      name = name.replace(/_attributes\]\[\w+\]\[(\w+)\]/g, "_attributes][][$1]");
+      return validators[name] || {};
+    }
   };
 
   validateForm = function(form, validators) {
