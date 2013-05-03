@@ -35,11 +35,11 @@ $.fn.isValid = (validators) ->
     validateElement(obj, validatorsFor(@[0].name, validators))
 
 validatorsFor = (name, validators) ->
-  if validators[name]
-    validators[name]
-  else
-    name = name.replace(/_attributes\]\[\w+\]\[(\w+)\]/g, "_attributes][][$1]")
-    validators[name] || {}
+  if captures = name.match /\[(\w+_attributes)\].*\[(\w+)\]$/
+    for validator_name, validator of validators
+      if validator_name.match "\\[#{captures[1]}\\].*\\[\\]\\[#{captures[2]}\\]$"
+        name = name.replace /\[[\da-z_]+\]\[(\w+)\]$/g, "[][$1]"
+  validators[name] || {}
 
 validateForm = (form, validators) ->
   form.trigger('form:validate:before.ClientSideValidations')
@@ -210,7 +210,7 @@ window.ClientSideValidations.validators =
       acceptance: (element, options) ->
         switch element.attr('type')
           when 'checkbox'
-            unless element.attr('checked')
+            unless element.prop('checked')
               return options.message
           when 'text'
             if element.val() != (options.accept?.toString() || '1')
@@ -230,6 +230,8 @@ window.ClientSideValidations.validators =
         unless ClientSideValidations.patterns.numericality.test(val)
           return if options.allow_blank == true and @presence(element, {message: options.messages.numericality})
           return options.messages.numericality
+
+        val = val.replace(new RegExp("\\#{ClientSideValidations.number_format.delimiter}",'g'),"").replace(new RegExp("\\#{ClientSideValidations.number_format.separator}",'g'),".")
 
         if options.only_integer and !/^[+-]?\d+$/.test(val)
           return options.messages.only_integer
@@ -391,12 +393,25 @@ window.ClientSideValidations.validators =
         data[name] = element.val()
 
         if jQuery.ajax({
-          url: '/validators/uniqueness',
+          url: ClientSideValidations.remote_validators_url_for('uniqueness')
           data: data,
           async: false
           cache: false
         }).status == 200
           return options.message
+
+window.ClientSideValidations.remote_validators_url_for = (validator) ->
+  if ClientSideValidations.remote_validators_prefix?
+    "//#{window.location.host}/#{ClientSideValidations.remote_validators_prefix}/validators/#{validator}"
+  else
+    "//#{window.location.host}/validators/#{validator}"
+
+
+window.ClientSideValidations.disableValidators = () ->
+  return if window.ClientSideValidations.disabled_validators == undefined
+  for validator, func of window.ClientSideValidations.validators.remote
+    if validator in window.ClientSideValidations.disabled_validators
+      delete window.ClientSideValidations.validators.remote[validator]
 
 window.ClientSideValidations.formBuilders =
     'ActionView::Helpers::FormBuilder':
@@ -450,4 +465,7 @@ window.ClientSideValidations.callbacks =
 # Main hook
 # If new forms are dynamically introduced into the DOM the .validate() method
 # must be invoked on that form
-$(-> $(ClientSideValidations.selectors.forms).validate())
+$(->
+  ClientSideValidations.disableValidators()
+  $(ClientSideValidations.selectors.forms).validate()
+)

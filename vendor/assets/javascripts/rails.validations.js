@@ -44,12 +44,16 @@
   };
 
   validatorsFor = function(name, validators) {
-    if (validators[name]) {
-      return validators[name];
-    } else {
-      name = name.replace(/_attributes\]\[\w+\]\[(\w+)\]/g, "_attributes][][$1]");
-      return validators[name] || {};
+    var captures, validator, validator_name;
+    if (captures = name.match(/\[(\w+_attributes)\].*\[(\w+)\]$/)) {
+      for (validator_name in validators) {
+        validator = validators[validator_name];
+        if (validator_name.match("\\[" + captures[1] + "\\].*\\[\\]\\[" + captures[2] + "\\]$")) {
+          name = name.replace(/\[[\da-z_]+\]\[(\w+)\]$/g, "[][$1]");
+        }
+      }
     }
+    return validators[name] || {};
   };
 
   validateForm = function(form, validators) {
@@ -288,7 +292,7 @@
         var _ref;
         switch (element.attr('type')) {
           case 'checkbox':
-            if (!element.attr('checked')) {
+            if (!element.prop('checked')) {
               return options.message;
             }
             break;
@@ -325,6 +329,7 @@
           }
           return options.messages.numericality;
         }
+        val = val.replace(new RegExp("\\" + ClientSideValidations.number_format.delimiter, 'g'), "").replace(new RegExp("\\" + ClientSideValidations.number_format.separator, 'g'), ".");
         if (options.only_integer && !/^[+-]?\d+$/.test(val)) {
           return options.messages.only_integer;
         }
@@ -537,7 +542,7 @@
         }
         data[name] = element.val();
         if (jQuery.ajax({
-          url: '/validators/uniqueness',
+          url: ClientSideValidations.remote_validators_url_for('uniqueness'),
           data: data,
           async: false,
           cache: false
@@ -546,6 +551,32 @@
         }
       }
     }
+  };
+
+  window.ClientSideValidations.remote_validators_url_for = function(validator) {
+    if (ClientSideValidations.remote_validators_prefix != null) {
+      return "//" + window.location.host + "/" + ClientSideValidations.remote_validators_prefix + "/validators/" + validator;
+    } else {
+      return "//" + window.location.host + "/validators/" + validator;
+    }
+  };
+
+  window.ClientSideValidations.disableValidators = function() {
+    var func, validator, _ref, _results;
+    if (window.ClientSideValidations.disabled_validators === void 0) {
+      return;
+    }
+    _ref = window.ClientSideValidations.validators.remote;
+    _results = [];
+    for (validator in _ref) {
+      func = _ref[validator];
+      if (__indexOf.call(window.ClientSideValidations.disabled_validators, validator) >= 0) {
+        _results.push(delete window.ClientSideValidations.validators.remote[validator]);
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
   };
 
   window.ClientSideValidations.formBuilders = {
@@ -610,6 +641,7 @@
   };
 
   $(function() {
+    ClientSideValidations.disableValidators();
     return $(ClientSideValidations.selectors.forms).validate();
   });
 
