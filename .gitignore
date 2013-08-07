@@ -9,3 +9,6 @@ test/generators/tmp/*
 bundler_stubs/*
 binstubs/*
 bin/*
+coverage
+node_modules/*
+log/*

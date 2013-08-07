@@ -42,7 +42,7 @@ module ClientSideValidations::ActionView::Helpers
       nil
     end
 
-    def initialize_with_client_side_validations(object_name, object, template, options, proc)
+    def initialize_with_client_side_validations(object_name, object, template, options, proc=nil)
       initialize_without_client_side_validations(object_name, object, template, options, proc)
       @options[:validators] = { object => {} }
     end
@@ -89,7 +89,7 @@ module ClientSideValidations::ActionView::Helpers
       time_zone_select_without_client_side_validations(method, priority_zones, options, html_options)
     end
 
-  private
+    private
 
     def build_validation_options(method, options = {})
       if @options[:validate]

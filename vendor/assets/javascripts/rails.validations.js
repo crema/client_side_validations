@@ -250,9 +250,8 @@
           return $(this).attr('data-validate', true);
         }).on(event, binding);
       }
-      $input.filter(':checkbox').on('click.ClientSideValidations', function() {
-        $(this).isValid(form.ClientSideValidations.settings.validators);
-        return true;
+      $input.filter(':checkbox').on('change.ClientSideValidations', function() {
+        return $(this).isValid(form.ClientSideValidations.settings.validators);
       });
       return $input.filter('[id$=_confirmation]').each(function() {
         var confirmationElement, element, _ref1, _results;
@@ -283,6 +282,11 @@
       return jQuery.extend({}, ClientSideValidations.validators.local, ClientSideValidations.validators.remote);
     },
     local: {
+      absence: function(element, options) {
+        if (!/^\s*$/.test(element.val() || '')) {
+          return options.message;
+        }
+      },
       presence: function(element, options) {
         if (/^\s*$/.test(element.val() || '')) {
           return options.message;
@@ -584,7 +588,7 @@
       add: function(element, settings, message) {
         var form, inputErrorField, label, labelErrorField;
         form = $(element[0].form);
-        if (element.data('valid') !== false && !(form.find("label.message[for='" + (element.attr('id')) + "']")[0] != null)) {
+        if (element.data('valid') !== false && (form.find("label.message[for='" + (element.attr('id')) + "']")[0] == null)) {
           inputErrorField = jQuery(settings.input_tag);
           labelErrorField = jQuery(settings.label_tag);
           label = form.find("label[for='" + (element.attr('id')) + "']:not(.message)");
