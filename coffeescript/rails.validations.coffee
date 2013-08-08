@@ -163,7 +163,7 @@ window.ClientSideValidations.enablers =
     form   = input.form
     $form  = $(form)
 
-    $input.filter(':not(:radio):not([id$=_confirmation])')
+    $input.filter(':not(:radio)')
       .each ->
         $(@).attr('data-validate', true)
       .on(event, binding) for event, binding of {
@@ -196,9 +196,14 @@ window.ClientSideValidations.enablers =
       confirmationElement = $(@)
       element = $form.find("##{@id.match(/(.+)_confirmation/)[1]}:input")
       if element[0]
-        $("##{confirmationElement.attr('id')}").on(event, binding) for event, binding of {
-          'focusout.ClientSideValidations': -> element.data('changed', true).isValid(form.ClientSideValidations.settings.validators)
-          'keyup.ClientSideValidations'   : -> element.data('changed', true).isValid(form.ClientSideValidations.settings.validators)
+        validateConfirmElement = ->
+          if confirmationElement.data('valid')?
+            confirmationElement.data('changed', true).isValid(form.ClientSideValidations.settings.validators);
+          else
+            true
+        $("##{element.attr('id')}").on(event, binding) for event, binding of {
+          'focusout.ClientSideValidations': validateConfirmElement
+          'keyup.ClientSideValidations'   : validateConfirmElement
         }
 
 window.ClientSideValidations.validators =
@@ -318,7 +323,7 @@ window.ClientSideValidations.validators =
           return options.message
 
       confirmation: (element, options) ->
-        if element.val() != jQuery("##{element.attr('id')}_confirmation").val()
+        if element.val() != jQuery("##{element.attr('id').replace('_confirmation', '')}").val()
           return options.message
 
       uniqueness: (element, options) ->

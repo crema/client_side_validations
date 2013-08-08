@@ -23,14 +23,26 @@ module ClientSideValidations::ActiveModel
   end
 
   module Validations
+    def merge_validator_hash_to_attr_hash!(attr_hash, attr, validator_hash)
+      if attr_hash[attr]
+        attr_hash[attr].merge!(validator_hash)
+      else
+        attr_hash.merge!(attr => validator_hash)
+      end
+      attr_hash
+    end
+
     def client_side_validation_hash(force = nil)
       _validators.inject({}) do |attr_hash, attr|
         unless [nil, :block].include?(attr[0])
-
           validator_hash = attr[1].inject(Hash.new { |h,k| h[k] = []}) do |kind_hash, validator|
             if can_use_for_client_side_validation?(attr[0], validator, force)
               if client_side_hash = validator.client_side_hash(self, attr[0], extract_force_option(attr[0], force))
-                kind_hash[validator.kind] << client_side_hash.except(:on, :if, :unless)
+                if validator.kind_of?(ActiveModel::Validations::ConfirmationValidator)
+                  merge_validator_hash_to_attr_hash!(attr_hash, :"#{attr[0]}_confirmation", {validator.kind => [client_side_hash.except(:on, :if, :unless)]})
+                else
+                  kind_hash[validator.kind] << client_side_hash.except(:on, :if, :unless)
+                end
               end
             end
 
@@ -38,7 +50,7 @@ module ClientSideValidations::ActiveModel
           end
 
           if validator_hash.present?
-            attr_hash.merge!(attr[0] => validator_hash)
+            merge_validator_hash_to_attr_hash!(attr_hash, attr[0], validator_hash)
           else
             attr_hash
           end

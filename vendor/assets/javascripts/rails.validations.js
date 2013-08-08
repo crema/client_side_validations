@@ -246,7 +246,7 @@
       };
       for (event in _ref) {
         binding = _ref[event];
-        $input.filter(':not(:radio):not([id$=_confirmation])').each(function() {
+        $input.filter(':not(:radio)').each(function() {
           return $(this).attr('data-validate', true);
         }).on(event, binding);
       }
@@ -258,18 +258,21 @@
         confirmationElement = $(this);
         element = $form.find("#" + (this.id.match(/(.+)_confirmation/)[1]) + ":input");
         if (element[0]) {
-          _ref1 = {
-            'focusout.ClientSideValidations': function() {
-              return element.data('changed', true).isValid(form.ClientSideValidations.settings.validators);
-            },
-            'keyup.ClientSideValidations': function() {
-              return element.data('changed', true).isValid(form.ClientSideValidations.settings.validators);
+          var validateConfirmElement = function() {
+            if (typeof(confirmationElement.data('valid')) == 'undefined') {
+              return true;
+            } else {
+              return confirmationElement.data('changed', true).isValid(form.ClientSideValidations.settings.validators);
             }
+          }
+          _ref1 = {
+            'focusout.ClientSideValidations': validateConfirmElement,
+            'keyup.ClientSideValidations': validateConfirmElement
           };
           _results = [];
           for (event in _ref1) {
             binding = _ref1[event];
-            _results.push($("#" + (confirmationElement.attr('id'))).on(event, binding));
+            _results.push($("#" + (element.attr('id'))).on(event, binding));
           }
           return _results;
         }
@@ -463,7 +466,7 @@
         }
       },
       confirmation: function(element, options) {
-        if (element.val() !== jQuery("#" + (element.attr('id')) + "_confirmation").val()) {
+        if (element.val() !== jQuery("#" + element.attr('id').replace('_confirmation', '')).val()) {
           return options.message;
         }
       },
