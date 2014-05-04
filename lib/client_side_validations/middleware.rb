@@ -50,12 +50,11 @@ module ClientSideValidations
 
       def response
         begin
+          self.status = 200
           if is_unique?
-            self.status = 204
-            self.body   = 'true'
+            self.body = 'true'
           else
-            self.status = 200
-            self.body   = 'false'
+            self.body = 'false'
           end
         rescue NotValidatable
           self.status = 500

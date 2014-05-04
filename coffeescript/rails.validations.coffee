@@ -405,7 +405,7 @@ window.ClientSideValidations.validators =
           data: data,
           async: false
           cache: false
-        }).status == 200
+        }).responseText == "false"
           return options.message
 
 window.ClientSideValidations.remote_validators_url_for = (validator) ->
