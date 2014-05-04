@@ -553,7 +553,7 @@
           data: data,
           async: false,
           cache: false
-        }).status === 200) {
+        }).responseText == "false") {
           return options.message;
         }
       }
