@@ -1,10 +1,13 @@
-module ClientSideValidations::ActiveModel
-  module Acceptance
-    private
+# frozen_string_literal: true
 
-    def message_type
-      :accepted
+module ClientSideValidations
+  module ActiveModel
+    module Acceptance
+      private
+
+      def message_type
+        :accepted
+      end
     end
   end
 end
-

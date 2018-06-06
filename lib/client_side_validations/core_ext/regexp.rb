@@ -1,13 +1,17 @@
+# frozen_string_literal: true
+
+require 'js_regex'
+
 class Regexp
-  def as_json(options = nil)
-    Regexp.new inspect.sub('\\A','^').sub('\\Z','$').sub('\\z','$').sub(/^\//,'').sub(/\/[a-z]*$/,'').gsub(/\(\?#.+\)/, '').gsub(/\(\?-\w+:/,'(').gsub(/\s/,''), self.options & 5
+  def as_json(*)
+    JsRegex.new(self).to_h
   end
 
   def to_json(options = nil)
-    as_json(options).inspect
+    as_json(options)
   end
 
-  def encode_json(encoder)
+  def encode_json(_encoder)
     inspect
   end
 end

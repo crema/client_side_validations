@@ -1,12 +1,8 @@
-require 'client_side_validations/active_model'
-require 'client_side_validations/middleware'
-require 'client_side_validations/active_record/middleware'
+# frozen_string_literal: true
 
-%w{uniqueness}.each do |validator|
-  require "client_side_validations/active_record/#{validator}"
-  validator.capitalize!
-  eval "ActiveRecord::Validations::#{validator}Validator.send(:include, ClientSideValidations::ActiveRecord::#{validator})"
-end
+require 'client_side_validations/active_model'
+require 'client_side_validations/extender'
 
 ActiveRecord::Base.send(:include, ClientSideValidations::ActiveModel::Validations)
-ClientSideValidations::Middleware::Uniqueness.register_orm(ClientSideValidations::ActiveRecord::Middleware)
+
+ClientSideValidations::Extender.extend 'ActiveRecord', %w[Uniqueness]

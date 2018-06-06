@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 class PersonValidator < ActiveModel::Validator
-  def validate(record)
-  end
+  def validate(record); end
 end
 
 class Person
@@ -9,7 +10,7 @@ class Person
   attr_accessor :first_name, :last_name, :email, :age
 
   validates_presence_of :first_name
-  validates_format_of :email, :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i
+  validates_format_of :email, with: /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i
 
   def new_record?
     true

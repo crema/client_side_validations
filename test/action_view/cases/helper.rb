@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base_helper'
 require 'action_view'
 require 'action_view/template'
@@ -12,170 +14,188 @@ end
 
 module ActionViewTestSetup
   include ::ClientSideValidations::ActionView::Helpers::FormHelper
-  include ::ClientSideValidations::ActionView::Helpers::FormTagHelper
 
   def form_for(*)
     @output_buffer = super
   end
 
   Routes = ActionDispatch::Routing::RouteSet.new
+  include Routes.url_helpers
+  def _routes
+    Routes
+  end
+
   Routes.draw do
     resources :posts do
       resources :comments
     end
 
-    root :to => 'main#index'
+    resources :format_things
+
+    root to: 'main#index'
+  end
+
+  def default_url_options
+    { only_path: true }
   end
 
   def url_for(object)
     @url_for_options = object
     if object.is_a?(Hash) && object[:use_route].blank? && object[:controller].blank?
-      object.merge!(:controller => "main", :action => "index")
+      object[:controller] = 'main'
+      object[:action] = 'index'
     end
     super
   end
 
-  def _routes
-    Routes
-  end
-
-  # Rails 3.2.0 dropped size from the form elements
-  def legacy_size
-    if Rails.version < '3.2.0'
-      'size="30" '
-    end
-  end
-
   def hidden_input_for_select(name)
-    if Rails.version >= '3.2.0'
-      %{<input name="#{name}" type="hidden" value="" />}
-    end
+    %(<input name="#{name}" type="hidden" value="" />)
   end
-
-  include Routes.url_helpers
 
   def setup
     super
 
     # Create 'label' locale for testing I18n label helpers
-    I18n.backend.store_translations 'label', {
-      :activemodel => {
-        :attributes => {
-          :post => {
-            :cost => 'Total cost'
+    label_translations = {
+      activemodel: {
+        attributes: {
+          post: {
+            cost: 'Total cost'
           }
         }
       },
-      :helpers => {
-        :label => {
-          :post => {
-            :body => 'Write entire text here'
+      helpers: {
+        label: {
+          post: {
+            body: 'Write entire text here'
           }
         }
       }
     }
+    I18n.backend.store_translations 'label', label_translations
 
     # Create "submit" locale for testing I18n submit helpers
-    I18n.backend.store_translations 'submit', {
-      :helpers => {
-        :submit => {
-          :create => 'Create %{model}',
-          :update => 'Confirm %{model} changes',
-          :submit => 'Save changes',
-          :another_post => {
-            :update => 'Update your %{model}'
+    submit_translations = {
+      helpers: {
+        submit: {
+          create: 'Create %{model}',
+          update: 'Confirm %{model} changes',
+          submit: 'Save changes',
+          another_post: {
+            update: 'Update your %{model}'
           }
         }
       }
     }
+    I18n.backend.store_translations 'submit', submit_translations
 
     @post = Post.new
     @comment = Comment.new
+    @format_thing = FormatThing.new
 
     if defined?(ActionView::OutputFlow)
       @view_flow        = ActionView::OutputFlow.new
     else
-      @_content_for     = Hash.new { |h,k| h[k] = ActiveSupport::SafeBuffer.new }
+      @_content_for     = Hash.new { |h, k| h[k] = ActiveSupport::SafeBuffer.new }
     end
   end
 
   def snowman(method = nil)
-    txt =  %{<div style="margin:0;padding:0;display:inline">}
-    txt << %{<input name="utf8" type="hidden" value="&#x2713;" />}
-    txt << %{<input name="_method" type="hidden" value="#{method}" />} if method
-    txt << %{</div>}
+    # Adding `.dup` avoids modification of frozen literal
+    txt = ''.dup
+    txt << %(<input name="utf8" type="hidden" value="&#x2713;" />)
+    txt << %(<input type="hidden" name="_method" value="#{method}" />) if method
+    txt
   end
 
-  def form_text(action = "http://www.example.com", id = nil, html_class = nil, remote = nil, validators = nil, file = nil)
-    txt =  %{<form accept-charset="UTF-8" action="#{action}"}
-    txt << %{ data-remote="true"} if remote
-    txt << %{ class="#{html_class}"} if html_class
-    txt << %{ data-validate="true"} if validators
-    txt << %{ enctype="multipart/form-data"} if file
-    txt << %{ id="#{id}"} if id
-    txt << %{ method="post"}
-    txt << %{ novalidate="novalidate"} if validators
-    txt << %{>}
+  def form_text(action = 'http://www.example.com', id = nil, html_class = nil, _remote = nil, validators = nil, file = nil, custom_id = false)
+    # Adding `.dup` avoids modification of frozen literal
+    txt = ''.dup
+    txt << %(<form action="#{action}" accept-charset="UTF-8" method="post")
+    if validators
+      txt << %( data-client-side-validations="#{CGI.escapeHTML(csv_data_attribute(validators))}")
+      txt << %( novalidate="novalidate") if validators
+    end
+    txt << %( id="#{id}") if id && custom_id
+    txt << %( class="#{html_class}") if html_class
+    txt << %( id="#{id}") if id && !custom_id
+    txt << %( enctype="multipart/form-data") if file
+    txt << %(>)
   end
 
-  def whole_form(action = "http://www.example.com", id = nil, html_class = nil, options = nil)
-    contents = block_given? ? yield : ""
+  def form_field(tag, id = nil, name = nil, type = nil, value = nil, multiple = false, tag_content = nil, custom_name = nil)
+    # Adding `.dup` avoids modification of frozen literal
+    txt = ''.dup
+    txt << %(<#{tag})
+    txt << %( name="#{custom_name}") if custom_name
+    txt << %( type="#{type}") if type
+    txt << %( value="#{value}") if value
+    txt << %( multiple="multiple") if multiple
+    txt << %( name="#{name}") if name
+    txt << %( id="#{id}") if id
+    txt <<
+      if %w[select textarea].include?(tag)
+        %(>#{tag_content}</#{tag}>)
+      else
+        %( />)
+      end
+  end
+
+  def whole_form(action = 'http://www.example.com', id = nil, html_class = nil, options = nil)
+    contents = block_given? ? yield : ''
 
     if options.is_a?(Hash)
-      method, remote, validators, file = options.values_at(:method, :remote, :validators, :file)
+      method, remote, validators, file, custom_id, no_validate = options.values_at(:method, :remote, :validators, :file, :custom_id, :no_validate)
     else
       method = options
     end
 
-    html = form_text(action, id, html_class, remote, validators, file) + snowman(method) + (contents || "") + "</form>"
-
-    if options.is_a?(Hash) && options[:validators]
-      build_script_tag(html, id, options[:validators])
-    else
-      html
-    end
+    form_text(action, id, html_class, remote, (validators || no_validate), file, custom_id) + snowman(method) + (contents || '') + '</form>'
   end
 
-  def build_script_tag(html, id, validators)
-    (html || "") + %Q{<script>//<![CDATA[\nif(window.ClientSideValidations==undefined)window.ClientSideValidations={};if(window.ClientSideValidations.forms==undefined)window.ClientSideValidations.forms={};window.ClientSideValidations.forms['#{id}'] = #{client_side_form_settings_helper.merge(:validators => validators).to_json};\n//]]></script>}
+  def csv_data_attribute(validators)
+    {
+      html_settings: client_side_form_settings_helper,
+      number_format: { separator: '.', delimiter: ',' },
+      validators: validators
+    }.to_json
   end
 
   protected
-    def comments_path(post)
-      "/posts/#{post.id}/comments"
-    end
-    alias_method :post_comments_path, :comments_path
 
-    def comment_path(post, comment)
-      "/posts/#{post.id}/comments/#{comment.id}"
-    end
-    alias_method :post_comment_path, :comment_path
+  def comments_path(post)
+    "/posts/#{post.id}/comments"
+  end
+  alias post_comments_path comments_path
 
-    def admin_comments_path(post)
-      "/admin/posts/#{post.id}/comments"
-    end
-    alias_method :admin_post_comments_path, :admin_comments_path
+  def comment_path(post, comment)
+    "/posts/#{post.id}/comments/#{comment.id}"
+  end
+  alias post_comment_path comment_path
 
-    def admin_comment_path(post, comment)
-      "/admin/posts/#{post.id}/comments/#{comment.id}"
-    end
-    alias_method :admin_post_comment_path, :admin_comment_path
+  def admin_comments_path(post)
+    "/admin/posts/#{post.id}/comments"
+  end
+  alias admin_post_comments_path admin_comments_path
 
-    def posts_path(options={})
-      "/posts"
-    end
+  def admin_comment_path(post, comment)
+    "/admin/posts/#{post.id}/comments/#{comment.id}"
+  end
+  alias admin_post_comment_path admin_comment_path
 
-    def post_path(post, options = {})
-      if options[:format]
-        "/posts/#{post.id}.#{options[:format]}"
-      else
-        "/posts/#{post.id}"
-      end
-    end
+  def posts_path(_options = {})
+    '/posts'
+  end
 
-    def protect_against_forgery?
-      false
+  def post_path(post, options = {})
+    if options[:format]
+      "/posts/#{post.id}.#{options[:format]}"
+    else
+      "/posts/#{post.id}"
     end
+  end
 
+  def protect_against_forgery?
+    false
+  end
 end
-

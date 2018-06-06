@@ -1,42 +1,50 @@
-module ClientSideValidations::ActiveModel
-  module Numericality
+# frozen_string_literal: true
 
-    OPTION_MAP = {}
+module ClientSideValidations
+  module ActiveModel
+    module Numericality
+      @@option_map = {}
 
-    def self.included(base)
-      OPTION_MAP.merge!(base::CHECKS.keys.inject({}) { |hash, key| hash.merge!(key => key) })
-    end
-
-    def client_side_hash(model, attribute, force = nil)
-      options = self.options.dup
-      hash    = { :messages => { :numericality => model.errors.generate_message(attribute, :not_a_number, options) } }
-
-      if options[:only_integer]
-        hash[:messages][:only_integer] = model.errors.generate_message(attribute, :not_an_integer, options)
-        hash[:only_integer] = true
+      def self.included(base)
+        @@option_map.merge!(base::CHECKS.keys.inject({}) { |acc, elem| acc.merge!(elem => elem) })
       end
 
-      hash[:allow_blank] = true if options[:allow_nil] || options[:allow_blank]
+      def client_side_hash(model, attribute, force = nil)
+        options = self.options.dup
+        hash    = options_hash(model, attribute, options)
 
-      OPTION_MAP.each do |option, message_type|
-        if count = options[option]
+        @@option_map.each do |option, message_type|
+          count = options[option]
+          next unless count
+
           if count.respond_to?(:call)
-            if force
-              count = count.call(model)
-            else
-              next
-            end
+            next unless force
+            count = count.call(model)
           end
-          hash[:messages][option] = model.errors.generate_message(attribute, message_type, options.merge(:count => count))
+
+          hash[:messages][option] = model.errors.generate_message(attribute, message_type, options.merge(count: count))
           hash[option] = count
         end
+
+        copy_conditional_attributes(hash, options)
+
+        hash
       end
 
-      copy_conditional_attributes(hash, options)
+      private
 
-      hash
+      def options_hash(model, attribute, options)
+        hash = { messages: { numericality: model.errors.generate_message(attribute, :not_a_number, options) } }
+
+        if options[:only_integer]
+          hash[:messages][:only_integer] = model.errors.generate_message(attribute, :not_an_integer, options)
+          hash[:only_integer] = true
+        end
+
+        hash[:allow_blank] = true if options[:allow_nil] || options[:allow_blank]
+
+        hash
+      end
     end
-
   end
 end
-

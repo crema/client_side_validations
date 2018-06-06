@@ -1,0 +1,64 @@
+AllCops:
+  DisplayCopNames: true
+  TargetRailsVersion: 5.0
+  TargetRubyVersion: 2.2
+  Exclude:
+    - 'vendor/bundle/**/*'
+
+Metrics/AbcSize:
+  Max: 18.36
+
+Metrics/BlockLength:
+  Exclude:
+    - '*.gemspec'
+    - 'test/**/*'
+
+Metrics/ClassLength:
+  Exclude:
+    - 'test/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 7
+  Exclude:
+    - 'test/**/*'
+
+Metrics/LineLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 18
+  Exclude:
+    - 'test/**/*'
+
+Metrics/ModuleLength:
+  Exclude:
+    - 'test/**/*'
+
+Metrics/ParameterLists:
+  Max: 8
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'test/**/*'
+
+Rails:
+  Enabled: true
+
+Rails/ApplicationRecord:
+  Exclude:
+    - 'test/active_record/models/*'
+
+Style/ClassVars:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/FormatStringToken:
+  Exclude:
+    - 'test/**/*'
+
+# TODO: Remove when targeting Ruby 2.3 because it is already enabled.
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always

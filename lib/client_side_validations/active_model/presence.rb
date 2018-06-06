@@ -1,10 +1,13 @@
-module ClientSideValidations::ActiveModel
-  module Presence
-    private
+# frozen_string_literal: true
 
-    def message_type
-      :blank
+module ClientSideValidations
+  module ActiveModel
+    module Presence
+      private
+
+      def message_type
+        :blank
+      end
     end
   end
 end
-
